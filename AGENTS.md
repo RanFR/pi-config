@@ -15,7 +15,7 @@ This repository holds personal configuration for the **pi coding agent** (themes
 No build or test tooling exists (no `package.json`); files are consumed directly by pi.
 
 - **Validate a theme:** ensure JSON parses (`node -e "require('./themes/<file>.json')"`) and keys match pi's theme schema.
-- **Type-check extensions:** `npx tsc --noEmit extensions/<file>.ts` (types come from `@mariozechner/pi-coding-agent` / `@earendil-works/pi-coding-agent`).
+- **Type-check extensions:** `npx tsc --noEmit extensions/<file>.ts` (types come from `@earendil-works/pi-coding-agent`).
 - **Apply changes:** restart pi or run `/reload`.
 
 ## Coding Style & Naming Conventions
