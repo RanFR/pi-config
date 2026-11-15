@@ -8,5 +8,6 @@
     "zai-coding-cn/glm-5.3": "max",
     "zai-coding-cn/glm-5.3-flash": "high"
   },
-  "theme": "nord"
+  "theme": "nord",
+  "packages": ["git:github.com/RanFR/pi-batch-runner"]
 }

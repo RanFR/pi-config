@@ -10,7 +10,7 @@
 │   ├── shell-timeout.ts
 │   ├── todo.ts
 │   ├── codex-tools/     # 含独立 README
-│   └── pi-batch-runner/ # 含独立 README、可独立类型检查
+│   └── (pi-batch-runner 独立仓库,经 pi packages 安装)
 ├── prompts/             # 斜杠命令提示词模板(YAML frontmatter + ${ARGUMENTS} 替换)
 ├── skills/              # 技能(每目录一个 SKILL.md)
 ├── themes/              # 主题 JSON(pi theme schema)
@@ -23,7 +23,7 @@
 | 扩展 | 形态 | 功能 |
 |---|---|---|
 | [codex-tools](extensions/codex-tools/README.md) | 斜杠命令 | 从 codex CLI 移植的 `/init`(生成 AGENTS.md)、`/diff`(工作区完整 diff 查看器)、`/review`(P0–P3 结构化代码审查)、`/recap`(会话速览摘要) |
-| [pi-batch-runner](extensions/pi-batch-runner/README.md) | 斜杠命令 | `/batch` 批处理:按清单文件顺序执行多个提示词任务,支持新会话隔离 / 会话续用、自动重试、断点续跑、汇总报告 |
+| [pi-batch-runner](https://github.com/RanFR/pi-batch-runner) | 斜杠命令 | `/batch` 批处理:按清单文件顺序执行多个提示词任务,支持新会话隔离 / 会话续用、自动重试、断点续跑、汇总报告。**独立仓库维护**,以 pi package 安装,不在本仓库内同步 |
 | `ask-user-question.ts` | 工具 | 注册 `ask_user_question` 工具:TUI 弹窗向用户提问,按参数派生自由输入 / 单选 / 多选三种交互;`executionMode: "sequential"` 串行化弹窗,`outputSchema` 输出结构化结果供 codemode 读取 |
 | `todo.ts` | 工具 + 命令 | `todo` 工具(list / add / set / toggle / clear)与 `/todos` 查看命令;状态存于 session entries,分支/重载后自动重建 |
 | `shell-timeout.ts` | 钩子 | 通过 `tool_call` 钩子给内置 bash/powershell 工具注入并钳制 timeout:默认 300s,上限 600s,防止命令挂起无限运行 |
@@ -50,6 +50,7 @@
 
 - 默认模型:`zai-coding-cn / glm-5.3-flash`,thinking level `high`;`glm-5.3` 为 `max`
 - `enabledModels` 限定模型循环列表;主题 `nord`
+- `packages` 声明 git 包 `pi-batch-runner`(独立仓库,更新用 `pi update --extensions`;同步时注意保留该字段,否则会被覆盖)
 
 ## 安装与同步
 
@@ -63,6 +64,10 @@ rsync -av skills/ ~/.pi/agent/skills/
 rsync -av themes/ ~/.pi/agent/themes/
 cp settings.json ~/.pi/agent/settings.json
 
+# pi-batch-runner 为独立仓库(github.com/RanFR/pi-batch-runner),以 pi package 安装,不走上面的 rsync:
+pi install git:github.com/RanFR/pi-batch-runner   # 首次安装,声明写入 ~/.pi/agent/settings.json 的 packages
+pi update --extensions                             # 后续更新(拉取远端 main 并 reconcile)
+
 # 或 symlink 单个扩展(开发期改动即时可见)
 ln -s /path/to/pi-config/extensions/codex-tools ~/.pi/agent/extensions/codex-tools
 
@@ -75,7 +80,7 @@ pi -e /path/to/pi-config/extensions/shell-timeout.ts
 ## 开发
 
 - 扩展为单文件 TypeScript(pi 运行时经 jiti 加载,无需构建);默认导出 `function (pi: ExtensionAPI)`,类型来自 `@earendil-works/pi-coding-agent`
-- `extensions/pi-batch-runner/` 可独立校验:`npm install && npm run typecheck`(vitest 测试框架已就绪,`npm test`)
+- pi-batch-runner 独立维护于 [RanFR/pi-batch-runner](https://github.com/RanFR/pi-batch-runner),类型检查 / 测试 / CHANGELOG 均在其仓库内进行
 - 手工验证:改完 `/reload` 后实际调用对应命令 / 工具,确认行为与 TUI 渲染正常
 - 提交信息遵循 Conventional Commits:`<type>[scope]: <description>`,imperative、< 72 字符;可用 `/commit` 直接生成
 
