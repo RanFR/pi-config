@@ -1,4 +1,12 @@
 {
-  "externalEditor": "code --wait",
-  "theme": "Selenized Dark"
+  "$schema": "https://pi.dev/schemas/settings.schema.json",
+  "defaultModel": "glm-5.3-flash",
+  "defaultProvider": "zai-coding-cn",
+  "defaultThinkingLevel": "high",
+  "enabledModels": ["glm-5.3", "glm-5.3-flash"],
+  "modelThinkingLevels": {
+    "zai-coding-cn/glm-5.3": "max",
+    "zai-coding-cn/glm-5.3-flash": "high"
+  },
+  "theme": "nord"
 }

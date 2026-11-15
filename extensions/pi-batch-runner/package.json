@@ -1,0 +1,17 @@
+{
+	"name": "pi-batch-runner",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "pi 批处理扩展：在单个 TUI 窗口中顺序执行清单文件中的多个提示词任务",
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-coding-agent": "1.5.2",
+		"@types/node": "^24.0.0",
+		"typescript": "^5.8.0",
+		"vitest": "^3.2.0"
+	}
+}
