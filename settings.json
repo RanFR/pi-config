@@ -1,13 +1,16 @@
 {
   "$schema": "https://pi.dev/schemas/settings.schema.json",
-  "defaultModel": "glm-5.3-flash",
+  "defaultModel": "glm-5.4",
   "defaultProvider": "zai-coding-cn",
   "defaultThinkingLevel": "high",
-  "enabledModels": ["glm-5.3", "glm-5.3-flash"],
+  "enabledModels": ["zai-coding-cn/glm-5.4"],
   "modelThinkingLevels": {
-    "zai-coding-cn/glm-5.3": "max",
-    "zai-coding-cn/glm-5.3-flash": "high"
+    "zai-coding-cn/glm-5.4": "high"
   },
   "theme": "nord",
-  "packages": ["git:github.com/RanFR/pi-batch-runner"]
+  "packages": ["git:github.com/RanFR/pi-batch-runner"],
+  "lastChangelogVersion": "1.6.1",
+  "extensionChangelogVersions": {
+    "{\"source\":\"git:github.com/RanFR/pi-batch-runner\",\"scope\":\"user\"}": "1.1.0"
+  }
 }

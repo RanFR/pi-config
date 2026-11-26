@@ -9,8 +9,8 @@
  *
  * @module
  */
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isToolCallEventType } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
+import { isToolCallEventType } from '@earendil-works/pi-coding-agent';
 
 /** Timeout (in seconds) used when the model omits `timeout`. */
 const DEFAULT_TIMEOUT_S = 300;
@@ -23,15 +23,12 @@ const MAX_TIMEOUT_S = 600;
  * @param pi - Extension API used to subscribe to the `tool_call` event.
  */
 export default function (pi: ExtensionAPI) {
-  pi.on("tool_call", (event) => {
+  pi.on('tool_call', (event) => {
     // Only touch the built-in shell tools; every other tool passes through.
-    if (
-      isToolCallEventType("bash", event) ||
-      isToolCallEventType("powershell", event)
-    ) {
+    if (isToolCallEventType('bash', event) || isToolCallEventType('powershell', event)) {
       // Treat unset/invalid timeouts as "use the default".
       const requested =
-        typeof event.input.timeout === "number" && event.input.timeout > 0
+        typeof event.input.timeout === 'number' && event.input.timeout > 0
           ? event.input.timeout
           : DEFAULT_TIMEOUT_S;
       const capped = Math.min(requested, MAX_TIMEOUT_S);

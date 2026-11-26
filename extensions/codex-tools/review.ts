@@ -9,9 +9,9 @@
  * @module
  */
 
-import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import type { AutocompleteItem } from "@earendil-works/pi-tui";
-import { commitTitle, defaultBranch, isGitRepo, localBranches, mergeBase } from "./git.ts";
+import type { ExtensionAPI, ExtensionCommandContext } from '@earendil-works/pi-coding-agent';
+import type { AutocompleteItem } from '@earendil-works/pi-tui';
+import { commitTitle, defaultBranch, isGitRepo, localBranches, mergeBase } from './git.ts';
 
 /** Review rubric appended to every review prompt (adapted from codex). */
 const RUBRIC = `## Review guidelines
@@ -62,13 +62,13 @@ Do not generate a fix for the findings.`;
  * changes introduced by a specific commit.
  */
 type ReviewTarget =
-	| { kind: "uncommitted" }
-	| { kind: "base"; branch: string }
-	| { kind: "commit"; sha: string };
+  | { kind: 'uncommitted' }
+  | { kind: 'base'; branch: string }
+  | { kind: 'commit'; sha: string };
 
 /** True when `value` looks like a git SHA (7-40 hex characters). */
 function looksLikeSha(value: string): boolean {
-	return /^[0-9a-f]{7,40}$/.test(value);
+  return /^[0-9a-f]{7,40}$/.test(value);
 }
 
 /**
@@ -80,37 +80,49 @@ function looksLikeSha(value: string): boolean {
  * @returns The resolved target, or undefined when the user cancels the picker.
  * @throws When the arguments do not match any accepted form.
  */
-async function resolveTarget(pi: ExtensionAPI, args: string, ctx: ExtensionCommandContext): Promise<ReviewTarget | undefined> {
-	const trimmed = args.trim();
-	const parts = trimmed.split(/\s+/);
+async function resolveTarget(
+  pi: ExtensionAPI,
+  args: string,
+  ctx: ExtensionCommandContext,
+): Promise<ReviewTarget | undefined> {
+  const trimmed = args.trim();
+  const parts = trimmed.split(/\s+/);
 
-	if (trimmed.length > 0) {
-		if (parts[0] === "base" && parts.length === 2 && parts[1]) return { kind: "base", branch: parts[1] };
-		if (parts[0] === "commit" && parts.length === 2 && parts[1]) return { kind: "commit", sha: parts[1] };
-		if (parts.length === 1 && looksLikeSha(parts[0]!)) return { kind: "commit", sha: parts[0] };
-		if (parts.length === 1) return { kind: "base", branch: parts[0] };
-		throw new Error(`invalid /review arguments: ${trimmed} (expected "", "base [branch]", "commit <sha>", a branch name, or a commit SHA)`);
-	}
+  if (trimmed.length > 0) {
+    if (parts[0] === 'base' && parts.length === 2 && parts[1])
+      return { kind: 'base', branch: parts[1] };
+    if (parts[0] === 'commit' && parts.length === 2 && parts[1])
+      return { kind: 'commit', sha: parts[1] };
+    if (parts.length === 1 && looksLikeSha(parts[0]!)) return { kind: 'commit', sha: parts[0] };
+    if (parts.length === 1) return { kind: 'base', branch: parts[0] };
+    throw new Error(
+      `invalid /review arguments: ${trimmed} (expected "", "base [branch]", "commit <sha>", a branch name, or a commit SHA)`,
+    );
+  }
 
-	const fallback: ReviewTarget = { kind: "uncommitted" };
-	if (!ctx.hasUI) return fallback;
+  const fallback: ReviewTarget = { kind: 'uncommitted' };
+  if (!ctx.hasUI) return fallback;
 
-	const base = await defaultBranch(pi.exec, ctx.cwd);
-	const options = ["Uncommitted changes", ...(base ? [`Base branch (${base})`] : ["Base branch"]), "Specific commit..."];
-	const choice = await ctx.ui.select("Review what?", options);
-	if (!choice) return undefined;
-	if (choice.startsWith("Uncommitted")) return fallback;
-	if (choice.startsWith("Base branch")) {
-		if (base) return { kind: "base", branch: base };
-		const branches = await localBranches(pi.exec, ctx.cwd);
-		if (branches.length === 0) throw new Error("no local branches found");
-		const branch = await ctx.ui.select("Base branch:", branches);
-		if (!branch) return undefined;
-		return { kind: "base", branch };
-	}
-	const sha = await ctx.ui.input("Commit SHA:");
-	if (!sha || sha.trim().length === 0) return undefined;
-	return { kind: "commit", sha: sha.trim() };
+  const base = await defaultBranch(pi.exec, ctx.cwd);
+  const options = [
+    'Uncommitted changes',
+    ...(base ? [`Base branch (${base})`] : ['Base branch']),
+    'Specific commit...',
+  ];
+  const choice = await ctx.ui.select('Review what?', options);
+  if (!choice) return undefined;
+  if (choice.startsWith('Uncommitted')) return fallback;
+  if (choice.startsWith('Base branch')) {
+    if (base) return { kind: 'base', branch: base };
+    const branches = await localBranches(pi.exec, ctx.cwd);
+    if (branches.length === 0) throw new Error('no local branches found');
+    const branch = await ctx.ui.select('Base branch:', branches);
+    if (!branch) return undefined;
+    return { kind: 'base', branch };
+  }
+  const sha = await ctx.ui.input('Commit SHA:');
+  if (!sha || sha.trim().length === 0) return undefined;
+  return { kind: 'commit', sha: sha.trim() };
 }
 
 /**
@@ -119,32 +131,32 @@ async function resolveTarget(pi: ExtensionAPI, args: string, ctx: ExtensionComma
  * {@link RUBRIC}.
  */
 async function buildPrompt(pi: ExtensionAPI, cwd: string, target: ReviewTarget): Promise<string> {
-	let request: string;
-	let hint: string;
-	switch (target.kind) {
-		case "uncommitted":
-			request =
-				"Review the current code changes (staged, unstaged, and untracked files) and provide prioritized findings. Start with `git status` and the working-tree diff (tracked and untracked), then inspect the surrounding code as needed.";
-			hint = "uncommitted changes";
-			break;
-		case "base": {
-			const sha = await mergeBase(pi.exec, cwd, target.branch);
-			request = sha
-				? `Review the code changes against the base branch '${target.branch}'. The merge base commit for this comparison is ${sha}. Run \`git diff ${sha}\` to inspect the changes relative to ${target.branch}. Provide prioritized, actionable findings.`
-				: `Review the code changes against the base branch '${target.branch}'. Start by finding the merge diff between the current branch and ${target.branch}'s upstream (e.g. \`git merge-base HEAD "${target.branch}"\`), then run \`git diff\` against that SHA. Provide prioritized, actionable findings.`;
-			hint = `changes vs ${target.branch}`;
-			break;
-		}
-		case "commit": {
-			const title = await commitTitle(pi.exec, cwd, target.sha);
-			request = title
-				? `Review the code changes introduced by commit ${target.sha} ("${title}"). Use \`git show ${target.sha}\` to see the change. Provide prioritized, actionable findings.`
-				: `Review the code changes introduced by commit ${target.sha}. Use \`git show ${target.sha}\` to see the change. Provide prioritized, actionable findings.`;
-			hint = `commit ${target.sha.slice(0, 12)}${title ? ` (${title})` : ""}`;
-			break;
-		}
-	}
-	return `Please review ${hint}.\n\n${request}\n\n${RUBRIC}`;
+  let request: string;
+  let hint: string;
+  switch (target.kind) {
+    case 'uncommitted':
+      request =
+        'Review the current code changes (staged, unstaged, and untracked files) and provide prioritized findings. Start with `git status` and the working-tree diff (tracked and untracked), then inspect the surrounding code as needed.';
+      hint = 'uncommitted changes';
+      break;
+    case 'base': {
+      const sha = await mergeBase(pi.exec, cwd, target.branch);
+      request = sha
+        ? `Review the code changes against the base branch '${target.branch}'. The merge base commit for this comparison is ${sha}. Run \`git diff ${sha}\` to inspect the changes relative to ${target.branch}. Provide prioritized, actionable findings.`
+        : `Review the code changes against the base branch '${target.branch}'. Start by finding the merge diff between the current branch and ${target.branch}'s upstream (e.g. \`git merge-base HEAD "${target.branch}"\`), then run \`git diff\` against that SHA. Provide prioritized, actionable findings.`;
+      hint = `changes vs ${target.branch}`;
+      break;
+    }
+    case 'commit': {
+      const title = await commitTitle(pi.exec, cwd, target.sha);
+      request = title
+        ? `Review the code changes introduced by commit ${target.sha} ("${title}"). Use \`git show ${target.sha}\` to see the change. Provide prioritized, actionable findings.`
+        : `Review the code changes introduced by commit ${target.sha}. Use \`git show ${target.sha}\` to see the change. Provide prioritized, actionable findings.`;
+      hint = `commit ${target.sha.slice(0, 12)}${title ? ` (${title})` : ''}`;
+      break;
+    }
+  }
+  return `Please review ${hint}.\n\n${request}\n\n${RUBRIC}`;
 }
 
 /**
@@ -157,29 +169,33 @@ async function buildPrompt(pi: ExtensionAPI, cwd: string, target: ReviewTarget):
  * @param pi - Extension API used to register the command, run git, and send messages.
  */
 export function registerReviewCommand(pi: ExtensionAPI): void {
-	pi.registerCommand("review", {
-		description: "Review current changes and find issues (from codex)",
-		getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
-			const items: AutocompleteItem[] = [{ value: "base", label: "base <branch>" }, { value: "commit", label: "commit <sha>" }];
-			const filtered = items.filter((i) => i.value.startsWith(prefix));
-			return filtered.length > 0 ? filtered : null;
-		},
-		handler: async (args, ctx) => {
-			if (!(await isGitRepo(pi.exec, ctx.cwd))) {
-				if (ctx.hasUI) ctx.ui.notify("/review — not inside a git repository", "error");
-				return;
-			}
-			let target: ReviewTarget | undefined;
-			try {
-				target = await resolveTarget(pi, args, ctx);
-			} catch (error) {
-				if (ctx.hasUI) ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
-				return;
-			}
-			if (!target) return;
+  pi.registerCommand('review', {
+    description: 'Review current changes and find issues (from codex)',
+    getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
+      const items: AutocompleteItem[] = [
+        { value: 'base', label: 'base <branch>' },
+        { value: 'commit', label: 'commit <sha>' },
+      ];
+      const filtered = items.filter((i) => i.value.startsWith(prefix));
+      return filtered.length > 0 ? filtered : null;
+    },
+    handler: async (args, ctx) => {
+      if (!(await isGitRepo(pi.exec, ctx.cwd))) {
+        if (ctx.hasUI) ctx.ui.notify('/review — not inside a git repository', 'error');
+        return;
+      }
+      let target: ReviewTarget | undefined;
+      try {
+        target = await resolveTarget(pi, args, ctx);
+      } catch (error) {
+        if (ctx.hasUI)
+          ctx.ui.notify(error instanceof Error ? error.message : String(error), 'error');
+        return;
+      }
+      if (!target) return;
 
-			const prompt = await buildPrompt(pi, ctx.cwd, target);
-			pi.sendUserMessage(prompt, ctx.isIdle() ? undefined : { deliverAs: "followUp" });
-		},
-	});
+      const prompt = await buildPrompt(pi, ctx.cwd, target);
+      pi.sendUserMessage(prompt, ctx.isIdle() ? undefined : { deliverAs: 'followUp' });
+    },
+  });
 }

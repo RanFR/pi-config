@@ -8,9 +8,9 @@
  * @module
  */
 
-import { access } from "node:fs/promises";
-import { join } from "node:path";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { access } from 'node:fs/promises';
+import { join } from 'node:path';
+import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 
 /**
  * Prompt sent into the session to generate the AGENTS.md contributor guide.
@@ -71,21 +71,22 @@ Add other sections if relevant, such as Security & Configuration Tips, Architect
  * @param pi - Extension API used to register the command and send messages.
  */
 export function registerInitCommand(pi: ExtensionAPI): void {
-	pi.registerCommand("init", {
-		description: "Create an AGENTS.md file with instructions for pi (from codex)",
-		handler: async (args, ctx) => {
-			const agentsPath = join(ctx.cwd, "AGENTS.md");
-			try {
-				await access(agentsPath);
-				if (ctx.hasUI) ctx.ui.notify("AGENTS.md already exists; not overwriting it", "warning");
-				return;
-			} catch {
-				// not found — proceed
-			}
+  pi.registerCommand('init', {
+    description: 'Create an AGENTS.md file with instructions for pi (from codex)',
+    handler: async (args, ctx) => {
+      const agentsPath = join(ctx.cwd, 'AGENTS.md');
+      try {
+        await access(agentsPath);
+        if (ctx.hasUI) ctx.ui.notify('AGENTS.md already exists; not overwriting it', 'warning');
+        return;
+      } catch {
+        // not found — proceed
+      }
 
-			const extra = args.trim();
-			const prompt = extra.length > 0 ? `${INIT_PROMPT}\n\nAdditional user instructions: ${extra}` : INIT_PROMPT;
-			pi.sendUserMessage(prompt, ctx.isIdle() ? undefined : { deliverAs: "followUp" });
-		},
-	});
+      const extra = args.trim();
+      const prompt =
+        extra.length > 0 ? `${INIT_PROMPT}\n\nAdditional user instructions: ${extra}` : INIT_PROMPT;
+      pi.sendUserMessage(prompt, ctx.isIdle() ? undefined : { deliverAs: 'followUp' });
+    },
+  });
 }

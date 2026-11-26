@@ -10,11 +10,11 @@
  * @module
  */
 
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { registerDiffCommand } from "./diff.ts";
-import { registerInitCommand } from "./init.ts";
-import { registerRecapCommand } from "./recap.ts";
-import { registerReviewCommand } from "./review.ts";
+import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
+import { registerDiffCommand } from './diff.ts';
+import { registerInitCommand } from './init.ts';
+import { registerRecapCommand } from './recap.ts';
+import { registerReviewCommand } from './review.ts';
 
 /**
  * Extension entry point: registers the codex-derived commands.
@@ -22,8 +22,8 @@ import { registerReviewCommand } from "./review.ts";
  * @param pi - Extension API used to register the commands.
  */
 export default function (pi: ExtensionAPI) {
-	registerInitCommand(pi);
-	registerDiffCommand(pi);
-	registerReviewCommand(pi);
-	registerRecapCommand(pi);
+  registerInitCommand(pi);
+  registerDiffCommand(pi);
+  registerReviewCommand(pi);
+  registerRecapCommand(pi);
 }

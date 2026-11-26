@@ -13,18 +13,14 @@
  *
  * @module
  */
-import {
-  type JsonObject,
-  type JsonValue,
-  StringEnum,
-} from "@earendil-works/pi-ai";
+import { type JsonObject, type JsonValue, StringEnum } from '@earendil-works/pi-ai';
 import {
   type ExtensionAPI,
   type ExtensionToolContext,
   keyHint,
   rawKeyHint,
   type Theme,
-} from "@earendil-works/pi-coding-agent";
+} from '@earendil-works/pi-coding-agent';
 import {
   Editor,
   type EditorTheme,
@@ -34,8 +30,8 @@ import {
   matchesKey,
   truncateToWidth,
   wrapTextWithAnsi,
-} from "@earendil-works/pi-tui";
-import { Type } from "typebox";
+} from '@earendil-works/pi-tui';
+import { Type } from 'typebox';
 
 /** A normalized, user-visible option of a question. */
 interface AskOption {
@@ -61,14 +57,14 @@ interface DisplayOption extends AskOption {
 
 /** Free-form answer submitted through the text-mode editor. */
 interface TextAnswer {
-  type: "text";
+  type: 'text';
   label: string;
   value: string;
 }
 
 /** A pre-defined option chosen by the user. */
 interface OptionAnswer {
-  type: "option";
+  type: 'option';
   /** Display label of the chosen option. */
   label: string;
   /** Machine-readable value of the chosen option. */
@@ -79,7 +75,7 @@ interface OptionAnswer {
 
 /** A custom answer typed into the "Other" editor. */
 interface OtherAnswer {
-  type: "other";
+  type: 'other';
   label: string;
   value: string;
 }
@@ -88,10 +84,10 @@ interface OtherAnswer {
 type AskAnswer = TextAnswer | OptionAnswer | OtherAnswer;
 
 /** Terminal state of a question. */
-type AskUserQuestionStatus = "answered" | "cancelled" | "unavailable";
+type AskUserQuestionStatus = 'answered' | 'cancelled' | 'unavailable';
 
 /** Interaction mode derived from the tool parameters. */
-type AskUserQuestionMode = "text" | "single-select" | "multi-select";
+type AskUserQuestionMode = 'text' | 'single-select' | 'multi-select';
 
 /**
  * Structured payload attached to the tool result via `details`, letting
@@ -119,13 +115,13 @@ interface AskUserQuestionResultDetails {
  * the text content.
  */
 const AskUserQuestionResultSchema = Type.Object({
-  status: StringEnum(["answered", "cancelled", "unavailable"] as const),
+  status: StringEnum(['answered', 'cancelled', 'unavailable'] as const),
   question: Type.String(),
   context: Type.Optional(Type.String()),
-  mode: StringEnum(["text", "single-select", "multi-select"] as const),
+  mode: StringEnum(['text', 'single-select', 'multi-select'] as const),
   answers: Type.Array(
     Type.Object({
-      type: StringEnum(["text", "option", "other"] as const),
+      type: StringEnum(['text', 'option', 'other'] as const),
       label: Type.String(),
       value: Type.String(),
       index: Type.Optional(Type.Number()),
@@ -143,12 +139,12 @@ const OptionSchema = Type.Object({
   value: Type.Optional(
     Type.String({
       description:
-        "Optional machine-readable value returned for the option. Defaults to the label.",
+        'Optional machine-readable value returned for the option. Defaults to the label.',
     }),
   ),
   description: Type.Optional(
     Type.String({
-      description: "Optional extra detail shown below the option.",
+      description: 'Optional extra detail shown below the option.',
     }),
   ),
 });
@@ -156,25 +152,22 @@ const OptionSchema = Type.Object({
 /** TypeBox schema describing the `ask_user_question` tool parameters. */
 const AskUserQuestionParams = Type.Object({
   question: Type.String({
-    description:
-      "The single question to ask the user. Ask exactly one question per tool call.",
+    description: 'The single question to ask the user. Ask exactly one question per tool call.',
   }),
   details: Type.Optional(
     Type.String({
-      description:
-        "Optional extra context or instructions shown under the question.",
+      description: 'Optional extra context or instructions shown under the question.',
     }),
   ),
   options: Type.Optional(
     Type.Array(OptionSchema, {
       description:
-        "Optional multiple-choice options. Omit or pass an empty array for free-form text input. Users will always be able to choose Other and type a custom answer when options are provided.",
+        'Optional multiple-choice options. Omit or pass an empty array for free-form text input. Users will always be able to choose Other and type a custom answer when options are provided.',
     }),
   ),
   multiSelect: Type.Optional(
     Type.Boolean({
-      description:
-        "Set to true to allow multiple answers to be selected for a question.",
+      description: 'Set to true to allow multiple answers to be selected for a question.',
     }),
   ),
 });
@@ -187,9 +180,7 @@ const AskUserQuestionParams = Type.Object({
  * @returns Sanitized options guaranteed to have non-empty labels.
  */
 function normalizeOptions(
-  options:
-    | Array<{ label: string; value?: string; description?: string }>
-    | undefined,
+  options: Array<{ label: string; value?: string; description?: string }> | undefined,
 ): AskOption[] {
   return (options || [])
     .map((option) => ({
@@ -206,21 +197,21 @@ function normalizeOptions(
  * "other" (case-insensitive).
  */
 function getOtherLabel(options: AskOption[]): string {
-  return options.some((option) => option.label.toLowerCase() === "other")
-    ? "Other (custom)"
-    : "Other";
+  return options.some((option) => option.label.toLowerCase() === 'other')
+    ? 'Other (custom)'
+    : 'Other';
 }
 
 /** Maps the active pi theme onto the pi-tui editor and select-list roles. */
 function createEditorTheme(theme: Theme): EditorTheme {
   return {
-    borderColor: (s) => theme.fg("accent", s),
+    borderColor: (s) => theme.fg('accent', s),
     selectList: {
-      selectedPrefix: (t) => theme.fg("accent", t),
-      selectedText: (t) => theme.fg("accent", t),
-      description: (t) => theme.fg("muted", t),
-      scrollInfo: (t) => theme.fg("dim", t),
-      noMatch: (t) => theme.fg("warning", t),
+      selectedPrefix: (t) => theme.fg('accent', t),
+      selectedText: (t) => theme.fg('accent', t),
+      description: (t) => theme.fg('muted', t),
+      scrollInfo: (t) => theme.fg('dim', t),
+      noMatch: (t) => theme.fg('warning', t),
     },
   };
 }
@@ -234,12 +225,7 @@ function createEditorTheme(theme: Theme): EditorTheme {
  * @param width - Total available width, including the indent.
  * @param indent - Prefix prepended to every wrapped line.
  */
-function addWrapped(
-  lines: string[],
-  text: string,
-  width: number,
-  indent = "",
-): void {
+function addWrapped(lines: string[], text: string, width: number, indent = ''): void {
   const contentWidth = Math.max(1, width - indent.length);
   for (const line of wrapTextWithAnsi(text, contentWidth)) {
     lines.push(truncateToWidth(`${indent}${line}`, width));
@@ -257,29 +243,22 @@ function frameHeader(
   question: string,
   context: string | undefined,
 ): void {
-  lines.push(truncateToWidth(theme.fg("accent", "─".repeat(width)), width));
-  addWrapped(lines, theme.fg("text", ` ${question}`), width);
+  lines.push(truncateToWidth(theme.fg('accent', '─'.repeat(width)), width));
+  addWrapped(lines, theme.fg('text', ` ${question}`), width);
   if (context) {
-    lines.push("");
-    addWrapped(lines, theme.fg("muted", ` ${context}`), width);
+    lines.push('');
+    addWrapped(lines, theme.fg('muted', ` ${context}`), width);
   }
-  lines.push("");
+  lines.push('');
 }
 
 /**
  * Renders the inline editor used to type a custom "Other" answer while
  * edit mode is active.
  */
-function frameEditorBlock(
-  lines: string[],
-  theme: Theme,
-  width: number,
-  editor: Editor,
-): void {
-  lines.push("");
-  lines.push(
-    truncateToWidth(theme.fg("muted", " Write your custom answer:"), width),
-  );
+function frameEditorBlock(lines: string[], theme: Theme, width: number, editor: Editor): void {
+  lines.push('');
+  lines.push(truncateToWidth(theme.fg('muted', ' Write your custom answer:'), width));
   for (const line of editor.render(Math.max(1, width - 2))) {
     lines.push(truncateToWidth(` ${line}`, width));
   }
@@ -288,17 +267,12 @@ function frameEditorBlock(
 /**
  * Renders the keyboard hint lines and the closing border of the frame.
  */
-function frameFooter(
-  lines: string[],
-  theme: Theme,
-  width: number,
-  hintLines: string[],
-): void {
-  lines.push("");
+function frameFooter(lines: string[], theme: Theme, width: number, hintLines: string[]): void {
+  lines.push('');
   for (const hint of hintLines) {
     lines.push(truncateToWidth(hint, width));
   }
-  lines.push(truncateToWidth(theme.fg("accent", "─".repeat(width)), width));
+  lines.push(truncateToWidth(theme.fg('accent', '─'.repeat(width)), width));
 }
 
 /** Cached frame renderer contract shared by the choice dialogs. */
@@ -346,11 +320,11 @@ function createFrameRenderer(
  */
 function formatAnswerForModel(answer: AskAnswer): string {
   switch (answer.type) {
-    case "text":
+    case 'text':
       return answer.label;
-    case "other":
+    case 'other':
       return `Other: ${answer.label}`;
-    case "option":
+    case 'option':
       return `${answer.index}. ${answer.label}`;
   }
 }
@@ -361,11 +335,11 @@ function formatAnswerForModel(answer: AskAnswer): string {
  */
 function answerSortRank(answer: AskAnswer): number {
   switch (answer.type) {
-    case "option":
+    case 'option':
       return answer.index;
-    case "other":
+    case 'other':
       return Number.MAX_SAFE_INTEGER - 1;
-    case "text":
+    case 'text':
       return Number.MAX_SAFE_INTEGER;
   }
 }
@@ -401,7 +375,7 @@ function toStructuredContent(details: AskUserQuestionResultDetails): JsonValue {
       label: answer.label,
       value: answer.value,
     };
-    if (answer.type === "option") entry.index = answer.index;
+    if (answer.type === 'option') entry.index = answer.index;
     return entry;
   });
   const result: JsonObject = {
@@ -419,22 +393,11 @@ function toStructuredContent(details: AskUserQuestionResultDetails): JsonValue {
  * Builds the tool result for a question the user dismissed (Esc) or that was
  * aborted mid-flight; reported as `status: "cancelled"`.
  */
-function cancelledResult(
-  question: string,
-  mode: AskUserQuestionMode,
-  context?: string,
-) {
-  const message = "User cancelled the question";
-  const details = buildStructuredResult(
-    "cancelled",
-    question,
-    mode,
-    [],
-    context,
-    message,
-  );
+function cancelledResult(question: string, mode: AskUserQuestionMode, context?: string) {
+  const message = 'User cancelled the question';
+  const details = buildStructuredResult('cancelled', question, mode, [], context, message);
   return {
-    content: [{ type: "text" as const, text: message }],
+    content: [{ type: 'text' as const, text: message }],
     details,
     structuredContent: toStructuredContent(details),
   };
@@ -450,16 +413,9 @@ function unavailableResult(
   message: string,
   context?: string,
 ) {
-  const details = buildStructuredResult(
-    "unavailable",
-    question,
-    mode,
-    [],
-    context,
-    message,
-  );
+  const details = buildStructuredResult('unavailable', question, mode, [], context, message);
   return {
-    content: [{ type: "text" as const, text: message }],
+    content: [{ type: 'text' as const, text: message }],
     details,
     structuredContent: toStructuredContent(details),
   };
@@ -477,27 +433,21 @@ function buildResult(
   answers: AskAnswer[],
 ) {
   let text: string;
-  if (mode === "text") {
+  if (mode === 'text') {
     const answer = answers[0];
     text =
       answer.label.trim().length > 0
         ? `User answered: ${answer.label}`
-        : "User submitted an empty response";
-  } else if (mode === "single-select") {
+        : 'User submitted an empty response';
+  } else if (mode === 'single-select') {
     text = `User selected: ${formatAnswerForModel(answers[0])}`;
   } else {
-    text = `User selected:\n${answers.map((answer) => `- ${formatAnswerForModel(answer)}`).join("\n")}`;
+    text = `User selected:\n${answers.map((answer) => `- ${formatAnswerForModel(answer)}`).join('\n')}`;
   }
 
-  const details = buildStructuredResult(
-    "answered",
-    question,
-    mode,
-    answers,
-    context,
-  );
+  const details = buildStructuredResult('answered', question, mode, answers, context);
   return {
-    content: [{ type: "text" as const, text }],
+    content: [{ type: 'text' as const, text }],
     details,
     structuredContent: toStructuredContent(details),
   };
@@ -523,11 +473,11 @@ function connectAbortSignal<T>(
   function finish(result: T | null) {
     if (settled) return;
     settled = true;
-    signal?.removeEventListener("abort", onAbort);
+    signal?.removeEventListener('abort', onAbort);
     done(result as T);
   }
   const onAbort = () => finish(null);
-  signal?.addEventListener("abort", onAbort, { once: true });
+  signal?.addEventListener('abort', onAbort, { once: true });
   if (signal?.aborted) finish(null);
   return finish;
 }
@@ -553,7 +503,7 @@ function askSingleChoice(
       id: `option:${index}`,
       index: index + 1,
     })),
-    { id: "other", label: otherLabel, value: "__other__", isOther: true },
+    { id: 'other', label: otherLabel, value: '__other__', isOther: true },
   ];
 
   return ctx.ui.custom<AskAnswer | null>((tui, theme, _kb, done) => {
@@ -566,7 +516,7 @@ function askSingleChoice(
     editor.onSubmit = (value) => {
       const trimmed = value.trim();
       if (!trimmed) return;
-      finish({ type: "other", label: trimmed, value: trimmed });
+      finish({ type: 'other', label: trimmed, value: trimmed });
     };
 
     function refresh() {
@@ -577,9 +527,9 @@ function askSingleChoice(
     function handleInput(data: string) {
       const kb = getKeybindings();
       if (editMode) {
-        if (kb.matches(data, "tui.select.cancel")) {
+        if (kb.matches(data, 'tui.select.cancel')) {
           editMode = false;
-          editor.setText("");
+          editor.setText('');
           refresh();
           return;
         }
@@ -588,33 +538,33 @@ function askSingleChoice(
         return;
       }
 
-      if (kb.matches(data, "tui.select.up") || data === "k") {
+      if (kb.matches(data, 'tui.select.up') || data === 'k') {
         optionIndex = Math.max(0, optionIndex - 1);
         refresh();
         return;
       }
-      if (kb.matches(data, "tui.select.down") || data === "j") {
+      if (kb.matches(data, 'tui.select.down') || data === 'j') {
         optionIndex = Math.min(allOptions.length - 1, optionIndex + 1);
         refresh();
         return;
       }
-      if (kb.matches(data, "tui.select.confirm") || data === "\n") {
+      if (kb.matches(data, 'tui.select.confirm') || data === '\n') {
         const selected = allOptions[optionIndex];
         if (selected.isOther) {
           editMode = true;
-          editor.setText("");
+          editor.setText('');
           refresh();
           return;
         }
         finish({
-          type: "option",
+          type: 'option',
           label: selected.label,
           value: selected.value,
           index: selected.index!,
         });
         return;
       }
-      if (kb.matches(data, "tui.select.cancel")) {
+      if (kb.matches(data, 'tui.select.cancel')) {
         finish(null);
       }
     }
@@ -628,21 +578,12 @@ function askSingleChoice(
       for (let i = 0; i < allOptions.length; i++) {
         const option = allOptions[i];
         const selected = i === optionIndex;
-        const prefix = selected ? theme.fg("accent", "> ") : "  ";
-        const label = option.isOther
-          ? option.label
-          : `${option.index}. ${option.label}`;
-        const styled = selected
-          ? theme.fg("accent", label)
-          : theme.fg("text", label);
+        const prefix = selected ? theme.fg('accent', '> ') : '  ';
+        const label = option.isOther ? option.label : `${option.index}. ${option.label}`;
+        const styled = selected ? theme.fg('accent', label) : theme.fg('text', label);
         add(`${prefix}${styled}`);
         if (option.description) {
-          addWrapped(
-            lines,
-            theme.fg("muted", option.description),
-            width,
-            "     ",
-          );
+          addWrapped(lines, theme.fg('muted', option.description), width, '     ');
         }
       }
 
@@ -650,11 +591,11 @@ function askSingleChoice(
       if (editMode) {
         frameEditorBlock(lines, theme, width, editor);
         hintLines.push(
-          ` ${keyHint("tui.select.confirm", "submit")}  ${keyHint("tui.select.cancel", "go back")}`,
+          ` ${keyHint('tui.select.confirm', 'submit')}  ${keyHint('tui.select.cancel', 'go back')}`,
         );
       } else {
         hintLines.push(
-          ` ${rawKeyHint("↑↓", "navigate")}  ${keyHint("tui.select.confirm", "select")}  ${keyHint("tui.select.cancel", "cancel")}`,
+          ` ${rawKeyHint('↑↓', 'navigate')}  ${keyHint('tui.select.confirm', 'select')}  ${keyHint('tui.select.cancel', 'cancel')}`,
         );
       }
       frameFooter(lines, theme, width, hintLines);
@@ -692,14 +633,14 @@ function askMultiChoice(
     index: index + 1,
   }));
   const submitItem: DisplayOption = {
-    id: "submit",
-    label: "Submit",
-    value: "__submit__",
+    id: 'submit',
+    label: 'Submit',
+    value: '__submit__',
     isSubmit: true,
   };
   const allItems: DisplayOption[] = [
     ...choiceItems,
-    { id: "other", label: otherLabel, value: "__other__", isOther: true },
+    { id: 'other', label: otherLabel, value: '__other__', isOther: true },
     submitItem,
   ];
 
@@ -714,8 +655,8 @@ function askMultiChoice(
     editor.onSubmit = (value) => {
       const trimmed = value.trim();
       if (!trimmed) return;
-      selected.set("other", {
-        type: "other",
+      selected.set('other', {
+        type: 'other',
         label: trimmed,
         value: trimmed,
       });
@@ -733,7 +674,7 @@ function askMultiChoice(
         selected.delete(item.id);
       } else {
         selected.set(item.id, {
-          type: "option",
+          type: 'option',
           label: item.label,
           value: item.value,
           index: item.index!,
@@ -745,9 +686,9 @@ function askMultiChoice(
     function handleInput(data: string) {
       const kb = getKeybindings();
       if (editMode) {
-        if (kb.matches(data, "tui.select.cancel")) {
+        if (kb.matches(data, 'tui.select.cancel')) {
           editMode = false;
-          editor.setText(selected.get("other")?.label || "");
+          editor.setText(selected.get('other')?.label || '');
           refresh();
           return;
         }
@@ -756,12 +697,12 @@ function askMultiChoice(
         return;
       }
 
-      if (kb.matches(data, "tui.select.up") || data === "k") {
+      if (kb.matches(data, 'tui.select.up') || data === 'k') {
         optionIndex = Math.max(0, optionIndex - 1);
         refresh();
         return;
       }
-      if (kb.matches(data, "tui.select.down") || data === "j") {
+      if (kb.matches(data, 'tui.select.down') || data === 'j') {
         optionIndex = Math.min(allItems.length - 1, optionIndex + 1);
         refresh();
         return;
@@ -771,12 +712,12 @@ function askMultiChoice(
       if (matchesKey(data, Key.space)) {
         if (current.isSubmit) return;
         if (current.isOther) {
-          if (selected.has("other")) {
-            selected.delete("other");
+          if (selected.has('other')) {
+            selected.delete('other');
             refresh();
           } else {
             editMode = true;
-            editor.setText("");
+            editor.setText('');
             refresh();
           }
           return;
@@ -785,7 +726,7 @@ function askMultiChoice(
         return;
       }
 
-      if (kb.matches(data, "tui.select.confirm") || data === "\n") {
+      if (kb.matches(data, 'tui.select.confirm') || data === '\n') {
         // Enter on "Submit" resolves only with at least one answer chosen.
         if (current.isSubmit) {
           if (selected.size > 0) {
@@ -795,7 +736,7 @@ function askMultiChoice(
         }
         if (current.isOther) {
           editMode = true;
-          editor.setText(selected.get("other")?.label || "");
+          editor.setText(selected.get('other')?.label || '');
           refresh();
           return;
         }
@@ -803,7 +744,7 @@ function askMultiChoice(
         return;
       }
 
-      if (kb.matches(data, "tui.select.cancel")) {
+      if (kb.matches(data, 'tui.select.cancel')) {
         finish(null);
       }
     }
@@ -817,48 +758,38 @@ function askMultiChoice(
       for (let i = 0; i < allItems.length; i++) {
         const item = allItems[i];
         const isFocused = i === optionIndex;
-        const prefix = isFocused ? theme.fg("accent", "> ") : "  ";
+        const prefix = isFocused ? theme.fg('accent', '> ') : '  ';
 
         if (item.isSubmit) {
           const label =
-            selected.size > 0
-              ? `✓ ${item.label} (${selected.size} selected)`
-              : `○ ${item.label}`;
+            selected.size > 0 ? `✓ ${item.label} (${selected.size} selected)` : `○ ${item.label}`;
           const styled = isFocused
-            ? theme.fg("accent", label)
-            : theme.fg(selected.size > 0 ? "success" : "dim", label);
+            ? theme.fg('accent', label)
+            : theme.fg(selected.size > 0 ? 'success' : 'dim', label);
           add(`${prefix}${styled}`);
           continue;
         }
 
         if (item.isOther) {
-          const other = selected.get("other");
-          const marker = other ? "[x]" : "[ ]";
-          const suffix = other ? ` — ${other.label}` : "";
+          const other = selected.get('other');
+          const marker = other ? '[x]' : '[ ]';
+          const suffix = other ? ` — ${other.label}` : '';
           const styled = isFocused
-            ? theme.fg("accent", `${marker} ${item.label}${suffix}`)
-            : theme.fg(
-                other ? "success" : "text",
-                `${marker} ${item.label}${suffix}`,
-              );
+            ? theme.fg('accent', `${marker} ${item.label}${suffix}`)
+            : theme.fg(other ? 'success' : 'text', `${marker} ${item.label}${suffix}`);
           add(`${prefix}${styled}`);
           continue;
         }
 
         const checked = selected.has(item.id);
-        const marker = checked ? "[x]" : "[ ]";
+        const marker = checked ? '[x]' : '[ ]';
         const label = `${marker} ${item.index}. ${item.label}`;
         const styled = isFocused
-          ? theme.fg("accent", label)
-          : theme.fg(checked ? "success" : "text", label);
+          ? theme.fg('accent', label)
+          : theme.fg(checked ? 'success' : 'text', label);
         add(`${prefix}${styled}`);
         if (item.description) {
-          addWrapped(
-            lines,
-            theme.fg("muted", item.description),
-            width,
-            "     ",
-          );
+          addWrapped(lines, theme.fg('muted', item.description), width, '     ');
         }
       }
 
@@ -866,19 +797,14 @@ function askMultiChoice(
       if (editMode) {
         frameEditorBlock(lines, theme, width, editor);
         hintLines.push(
-          ` ${keyHint("tui.select.confirm", "save")}  ${keyHint("tui.select.cancel", "go back")}`,
+          ` ${keyHint('tui.select.confirm', 'save')}  ${keyHint('tui.select.cancel', 'go back')}`,
         );
       } else {
         if (selected.size === 0) {
-          hintLines.push(
-            theme.fg(
-              "warning",
-              " Select at least one answer before submitting.",
-            ),
-          );
+          hintLines.push(theme.fg('warning', ' Select at least one answer before submitting.'));
         }
         hintLines.push(
-          ` ${rawKeyHint("↑↓", "navigate")}  ${rawKeyHint("Space", "toggle")}  ${keyHint("tui.select.confirm", "toggle/submit")}  ${keyHint("tui.select.cancel", "cancel")}`,
+          ` ${rawKeyHint('↑↓', 'navigate')}  ${rawKeyHint('Space', 'toggle')}  ${keyHint('tui.select.confirm', 'toggle/submit')}  ${keyHint('tui.select.cancel', 'cancel')}`,
         );
       }
       frameFooter(lines, theme, width, hintLines);
@@ -907,26 +833,26 @@ function askMultiChoice(
  */
 export default function askUserQuestion(pi: ExtensionAPI) {
   pi.registerTool({
-    name: "ask_user_question",
-    label: "ask_user_question",
+    name: 'ask_user_question',
+    label: 'ask_user_question',
     description:
-      "Ask the user a single question and pause execution until they answer. Use this when requirements are ambiguous, user preferences are needed, a decision would materially affect implementation, or you need confirmation before proceeding. Ask exactly one question per tool call, and prefer multiple separate tool calls over bundling unrelated questions together.",
+      'Ask the user a single question and pause execution until they answer. Use this when requirements are ambiguous, user preferences are needed, a decision would materially affect implementation, or you need confirmation before proceeding. Ask exactly one question per tool call, and prefer multiple separate tool calls over bundling unrelated questions together.',
     promptSnippet:
-      "Use this tool to ask exactly one clarifying question, missing-requirement question, preference question, or decision question before continuing.",
+      'Use this tool to ask exactly one clarifying question, missing-requirement question, preference question, or decision question before continuing.',
     promptGuidelines: [
-      "Ask exactly one question per tool call.",
-      "If you need answers to multiple questions, make multiple separate ask_user_question tool calls instead of combining them into one prompt.",
+      'Ask exactly one question per tool call.',
+      'If you need answers to multiple questions, make multiple separate ask_user_question tool calls instead of combining them into one prompt.',
       'Users will always be able to select "Other" to provide custom text input when options are provided.',
-      "Use multiSelect: true only when you need multiple answers to the same question.",
+      'Use multiSelect: true only when you need multiple answers to the same question.',
       'If you recommend a specific option, make it the first option in the list and add "(Recommended)" at the end of the label.',
-      "Prefer this tool over guessing when requirements, preferences, or implementation choices are unclear.",
-      "Use this tool when multiple valid implementation paths exist and the preferred path depends on user choice.",
+      'Prefer this tool over guessing when requirements, preferences, or implementation choices are unclear.',
+      'Use this tool when multiple valid implementation paths exist and the preferred path depends on user choice.',
     ],
     parameters: AskUserQuestionParams,
     outputSchema: AskUserQuestionResultSchema,
     // pi 1.4: serialize the dialog against other tool calls (replaces the
     // former globalThis UI-mutex workaround for the pre-1.4 dialog bug).
-    executionMode: "sequential",
+    executionMode: 'sequential',
 
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       const options = normalizeOptions(params.options);
@@ -934,71 +860,53 @@ export default function askUserQuestion(pi: ExtensionAPI) {
       // Derive the interaction mode: no options -> free-text editor,
       // otherwise single- or multi-select depending on `multiSelect`.
       const mode: AskUserQuestionMode =
-        options.length === 0
-          ? "text"
-          : params.multiSelect
-            ? "multi-select"
-            : "single-select";
+        options.length === 0 ? 'text' : params.multiSelect ? 'multi-select' : 'single-select';
 
       if (signal?.aborted) {
         return cancelledResult(params.question, mode, context);
       }
 
-      if (mode === "text") {
+      if (mode === 'text') {
         // RPC mode forwards ui.editor() through the extension UI protocol.
         if (!ctx.hasUI) {
           return unavailableResult(
             params.question,
             mode,
-            "ask_user_question requires interactive or RPC mode",
+            'ask_user_question requires interactive or RPC mode',
             context,
           );
         }
-      } else if (ctx.mode !== "tui") {
+      } else if (ctx.mode !== 'tui') {
         // ctx.ui.custom() is a no-op outside interactive mode (RPC returns
         // undefined), which would surface as a bogus "user cancelled".
         return unavailableResult(
           params.question,
           mode,
-          "ask_user_question with options requires interactive mode",
+          'ask_user_question with options requires interactive mode',
           context,
         );
       }
 
-      if (mode === "text") {
-        const editorTitle = context
-          ? `${params.question}\n\n${context}`
-          : params.question;
+      if (mode === 'text') {
+        const editorTitle = context ? `${params.question}\n\n${context}` : params.question;
         const answer = await ctx.ui.editor(editorTitle);
         if (answer === undefined) {
           return cancelledResult(params.question, mode, context);
         }
         return buildResult(params.question, context, mode, [
-          { type: "text", label: answer.trim(), value: answer.trim() },
+          { type: 'text', label: answer.trim(), value: answer.trim() },
         ]);
       }
 
-      if (mode === "single-select") {
-        const answer = await askSingleChoice(
-          ctx,
-          params.question,
-          context,
-          options,
-          signal,
-        );
+      if (mode === 'single-select') {
+        const answer = await askSingleChoice(ctx, params.question, context, options, signal);
         if (!answer) {
           return cancelledResult(params.question, mode, context);
         }
         return buildResult(params.question, context, mode, [answer]);
       }
 
-      const answers = await askMultiChoice(
-        ctx,
-        params.question,
-        context,
-        options,
-        signal,
-      );
+      const answers = await askMultiChoice(ctx, params.question, context, options, signal);
       if (!answers) {
         return cancelledResult(params.question, mode, context);
       }
@@ -1008,22 +916,18 @@ export default function askUserQuestion(pi: ExtensionAPI) {
     /** Renders the collapsed tool-call entry shown in the transcript. */
     renderCall(args, theme) {
       const options = normalizeOptions(
-        args.options as
-          | Array<{ label: string; value?: string; description?: string }>
-          | undefined,
+        args.options as Array<{ label: string; value?: string; description?: string }> | undefined,
       );
       let text =
-        theme.fg("toolTitle", theme.bold("ask_user_question ")) +
-        theme.fg("muted", args.question);
+        theme.fg('toolTitle', theme.bold('ask_user_question ')) + theme.fg('muted', args.question);
       if (args.multiSelect) {
-        text += theme.fg("dim", " [multi-select]");
+        text += theme.fg('dim', ' [multi-select]');
       }
       if (options.length > 0) {
-        const labels = [
-          ...options.map((option) => option.label),
-          getOtherLabel(options),
-        ].join(", ");
-        text += `\n${theme.fg("dim", `  Options: ${labels}`)}`;
+        const labels = [...options.map((option) => option.label), getOtherLabel(options)].join(
+          ', ',
+        );
+        text += `\n${theme.fg('dim', `  Options: ${labels}`)}`;
       }
       return new Text(text, 0, 0);
     },
@@ -1034,28 +938,19 @@ export default function askUserQuestion(pi: ExtensionAPI) {
      * the list of answers.
      */
     renderResult(result, _options, theme) {
-      const details = result.details as
-        | AskUserQuestionResultDetails
-        | undefined;
+      const details = result.details as AskUserQuestionResultDetails | undefined;
       if (!details) {
         const first = result.content[0];
-        return new Text(first?.type === "text" ? first.text : "", 0, 0);
+        return new Text(first?.type === 'text' ? first.text : '', 0, 0);
       }
 
-      if (details.status === "cancelled") {
-        return new Text(
-          theme.fg("warning", details.message || "Cancelled"),
-          0,
-          0,
-        );
+      if (details.status === 'cancelled') {
+        return new Text(theme.fg('warning', details.message || 'Cancelled'), 0, 0);
       }
 
-      if (details.status === "unavailable") {
+      if (details.status === 'unavailable') {
         return new Text(
-          theme.fg(
-            "warning",
-            details.message || "ask_user_question unavailable",
-          ),
+          theme.fg('warning', details.message || 'ask_user_question unavailable'),
           0,
           0,
         );
@@ -1065,26 +960,22 @@ export default function askUserQuestion(pi: ExtensionAPI) {
       // neither the !details nor the status checks above catch them. Render
       // the raw result text (the validation error) instead of trusting the
       // details shape, which would crash the TUI.
-      if (details.status !== "answered" || !Array.isArray(details.answers)) {
+      if (details.status !== 'answered' || !Array.isArray(details.answers)) {
         const first = result.content[0];
-        return new Text(
-          first?.type === "text" ? theme.fg("error", first.text) : "",
-          0,
-          0,
-        );
+        return new Text(first?.type === 'text' ? theme.fg('error', first.text) : '', 0, 0);
       }
 
       const lines = details.answers.map((answer) => {
         switch (answer.type) {
-          case "text":
-            return `${theme.fg("success", "✓ ")}${theme.fg("accent", answer.label || "(empty response)")}`;
-          case "other":
-            return `${theme.fg("success", "✓ ")}${theme.fg("muted", "Other: ")}${theme.fg("accent", answer.label)}`;
-          case "option":
-            return `${theme.fg("success", "✓ ")}${theme.fg("accent", `${answer.index}. ${answer.label}`)}`;
+          case 'text':
+            return `${theme.fg('success', '✓ ')}${theme.fg('accent', answer.label || '(empty response)')}`;
+          case 'other':
+            return `${theme.fg('success', '✓ ')}${theme.fg('muted', 'Other: ')}${theme.fg('accent', answer.label)}`;
+          case 'option':
+            return `${theme.fg('success', '✓ ')}${theme.fg('accent', `${answer.index}. ${answer.label}`)}`;
         }
       });
-      return new Text(lines.join("\n"), 0, 0);
+      return new Text(lines.join('\n'), 0, 0);
     },
   });
 }

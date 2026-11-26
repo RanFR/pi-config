@@ -1,0 +1,10 @@
+{
+  "$schema": "https://pi.dev/schemas/models.schema.json",
+  "providers": {
+    "zai-coding-cn": {
+      "modelOverrides": {
+        "glm-5.4": { "contextWindow": 512000 }
+      }
+    }
+  }
+}

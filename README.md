@@ -84,6 +84,10 @@ pi -e /path/to/pi-config/extensions/shell-timeout.ts
 - 手工验证:改完 `/reload` 后实际调用对应命令 / 工具,确认行为与 TUI 渲染正常
 - 提交信息遵循 Conventional Commits:`<type>[scope]: <description>`,imperative、< 72 字符;可用 `/commit` 直接生成
 
+## 致谢
+
+本仓库部分内容参考或改编自 [github/awesome-copilot](https://github.com/github/awesome-copilot),感谢该仓库及其全体贡献者。该仓库以 [MIT License](https://github.com/github/awesome-copilot/blob/main/LICENSE) 开源,相关内容的版权归原作者所有。
+
 ## License
 
 [MIT](LICENSE) © 2026 RanFR
