@@ -28,7 +28,7 @@
 | 扩展 | 形态 | 功能 |
 |---|---|---|
 | [codex-tools](extensions/codex-tools/README.md) | 斜杠命令 | 从 codex CLI 移植的 `/init`(生成 AGENTS.md)、`/diff`(工作区完整 diff 查看器)、`/review`(P0–P3 结构化代码审查)、`/recap`(会话速览摘要) |
-| [commit](extensions/commit/) | 斜杠命令 | `/commit [说明]`:一次低推理力度的模型调用生成 Conventional Commits 消息并提交,参考仓库最近 15 条提交的语言与风格;`/commit check` 先审阅再决定(直接提交 / 手动编辑 / 带反馈重写 / 取消)。已暂存内容原样提交;未暂存时自动暂存全部变更,疑似密钥的文件(`.env*`、`*.pem` / `*.key`、`id_rsa`、`.netrc` 等)永不提交。diff 超出预算时裁剪(省略锁文件、每文件最多 200 行、总量约 48k 字符) |
+| [commit](extensions/commit/) | 斜杠命令 | `/commit [说明]`:单次低推理力度的模型调用生成 Conventional Commits 消息并提交,参考仓库最近 15 条提交的语言与风格;`/commit check` 先审阅再决定(直接提交 / 手动编辑 / 带反馈重写 / 取消)。已暂存内容原样提交;未暂存时自动暂存全部变更,疑似密钥的文件(`.env*`、`*.pem` / `*.key`、`id_rsa`、`.netrc` 等)永不提交。diff 超出预算时裁剪(省略锁文件、每文件最多 200 行、总量约 48k 字符)。底部状态栏实时显示当前阶段(等待模型 → 已接收 N 字符 → 执行 git commit)与耗时;模型调用沿用 pi 会话轮次的超时与重试策略(读取 settings 的 `retry.*` / `httpIdleTimeoutMs`),瞬时错误按退避自动重试并在状态栏显示倒计时;按中断键(默认 Esc)可随时取消模型调用,不会提交 |
 | [pi-batch-runner](https://github.com/RanFR/pi-batch-runner) | 斜杠命令 | `/batch` 批处理:按清单文件顺序执行多个提示词任务,支持新会话隔离 / 会话续用、自动重试、断点续跑、汇总报告。**独立仓库维护**,以 pi package 安装,不在本仓库内同步 |
 | `ask-user-question.ts` | 工具 | 注册 `ask_user_question` 工具:TUI 弹窗向用户提问,按参数派生自由输入 / 单选 / 多选三种交互,选项列表始终附带 "Other" 自由输入;`executionMode: "sequential"` 串行化弹窗,`outputSchema` 输出结构化结果(`status` / `mode` / `answers`)供 codemode 读取;自由输入模式亦支持 RPC,非交互且非 RPC 模式返回 `unavailable` |
 | `todo.ts` | 工具 + 命令 | `todo` 工具(list / add / set / toggle / clear)与 `/todos` 查看命令;状态存于 session entries,分支 / 重载后自动重建,压缩(compaction)或分支摘要后再把当前列表同步回模型上下文 |
