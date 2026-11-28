@@ -1,0 +1,8 @@
+codex-tools
+Copyright 2026 RanFR
+
+This extension adapts material from OpenAI Codex
+(https://github.com/openai/codex), Copyright 2025 OpenAI,
+licensed under the Apache License, Version 2.0.
+The adapted upstream files and the changes made to them are
+described in README.md.

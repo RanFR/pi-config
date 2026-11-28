@@ -1,11 +1,14 @@
 /**
- * codex-tools: commands ported from the codex CLI (https://github.com/openai/codex).
+ * codex-tools: the `/init`, `/diff`, `/review` and `/recap` slash commands.
  *
  * Commands:
  * - `/init` — analyze the repo and write an AGENTS.md contributor guide
  * - `/diff` — show the working-tree git diff (tracked + untracked) in a pager
  * - `/review` — review uncommitted changes, a base branch, or a commit (P0-P3 findings)
  * - `/recap` — catch-up summary of the current conversation, without compacting
+ *
+ * This extension adapts material from OpenAI Codex (https://github.com/openai/codex),
+ * Apache-2.0. See LICENSE and NOTICE in this directory.
  *
  * @module
  */
@@ -17,7 +20,7 @@ import { registerRecapCommand } from './recap.ts';
 import { registerReviewCommand } from './review.ts';
 
 /**
- * Extension entry point: registers the codex-derived commands.
+ * Extension entry point: registers the four commands.
  *
  * @param pi - Extension API used to register the commands.
  */

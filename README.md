@@ -9,7 +9,7 @@
 │   ├── ask-user-question.ts
 │   ├── shell-timeout.ts
 │   ├── todo.ts
-│   ├── codex-tools/     # 从 codex CLI 移植的 4 个命令,含独立 README
+│   ├── codex-tools/     # 从 codex CLI 移植的 4 个命令;含独立 README,Apache-2.0
 │   ├── commit/          # /commit:生成 Conventional Commits 消息并提交
 │   └── (pi-batch-runner 独立仓库,经 pi packages 安装)
 ├── prompts/             # 斜杠命令提示词模板(YAML frontmatter + ${ARGUMENTS} 替换)
@@ -20,7 +20,8 @@
 ├── mcp.json             # MCP 服务器配置
 ├── AGENTS.md            # 全局 agent 指南(Python/uv 工具链规则、任务跟踪规则)
 ├── .prettierrc          # Prettier 配置
-└── LICENSE              # MIT
+├── LICENSE              # MIT;例外:extensions/codex-tools/ 为 Apache-2.0
+└── THIRD_PARTY_LICENSES.md  # 第三方来源与许可声明(pi、codex、awesome-copilot)
 ```
 
 ## 扩展(extensions/)
@@ -109,8 +110,12 @@ pi -e /path/to/pi-config/extensions/shell-timeout.ts
 
 ## 致谢
 
-本仓库部分内容参考或改编自 [github/awesome-copilot](https://github.com/github/awesome-copilot),感谢该仓库及其全体贡献者。该仓库以 [MIT License](https://github.com/github/awesome-copilot/blob/main/LICENSE) 开源,相关内容的版权归原作者所有。
+`/commit` 扩展（`extensions/commit/`）在流程思路上参考了 [github/awesome-copilot](https://github.com/github/awesome-copilot) 的 git-commit skill，感谢该仓库及其全体贡献者；本仓库早期版本也曾直接包含该 skill，现已移除。该仓库以 [MIT License](https://github.com/github/awesome-copilot/blob/main/LICENSE) 开源，其版权与许可声明保留在 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。
+
+[extensions/codex-tools](extensions/codex-tools/) 改编自 [OpenAI Codex](https://github.com/openai/codex)，感谢 OpenAI 以 [Apache-2.0](https://github.com/openai/codex/blob/main/LICENSE) 将其开源。该目录整体同样以 Apache-2.0 授权，改编的文件、改动说明与署名见其 [README](extensions/codex-tools/README.md#来源与许可)、[LICENSE](extensions/codex-tools/LICENSE) 与 [NOTICE](extensions/codex-tools/NOTICE)。
+
+`extensions/todo.ts` 改编自 [pi](https://github.com/earendil-works/pi) 自带的扩展示例 `examples/extensions/todo.ts`，感谢 pi 的作者；pi 以 [MIT License](https://github.com/earendil-works/pi/blob/main/LICENSE) 开源，其版权与许可声明按要求保留在 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。
 
 ## License
 
-[MIT](LICENSE) © 2026 RanFR
+[MIT](LICENSE) © 2026 RanFR。例外：`extensions/codex-tools/` 为 OpenAI Codex 的衍生作品，整体以 [Apache-2.0](extensions/codex-tools/LICENSE) 授权，详见该目录的 [README](extensions/codex-tools/README.md#来源与许可) 与 [NOTICE](extensions/codex-tools/NOTICE)。第三方来源与声明汇总见 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。

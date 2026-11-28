@@ -2,14 +2,14 @@
 
 从 codex CLI 移植到 pi 的扩展，提供 4 个斜杠命令。安装于 `~/.pi/agent/extensions/codex-tools/`，全局生效（所有项目可用），修改代码后用 `/reload` 热加载。
 
-源仓库参考：https://github.com/openai/codex （codex-rs Rust 实现）
+改编自 [OpenAI Codex](https://github.com/openai/codex)（codex-rs Rust 实现）；来源、许可与改动说明见文末[「来源与许可」](#来源与许可)。
 
-| 命令 | 功能 | codex 源文件 |
+| 命令 | 功能 | codex 源文件（路径相对 codex 仓库） |
 |---|---|---|
-| `/init` | 分析仓库并生成 AGENTS.md 贡献者指南 | `tui/assets/prompt_for_init_command.md` |
-| `/diff` | 查看工作区完整 diff（含 untracked） | `tui/src/get_git_diff.rs` |
-| `/review` | 结构化代码审查（P0–P3 发现 + 结论） | `prompts/src/review_request.rs`、`review/rubric.md` |
-| `/recap` | 会话速览摘要（不动上下文） | `tui/src/app/recap.rs`、`recap_prompt.rs` |
+| `/init` | 分析仓库并生成 AGENTS.md 贡献者指南 | `codex-rs/tui/assets/prompt_for_init_command.md` |
+| `/diff` | 查看工作区完整 diff（含 untracked） | `codex-rs/tui/src/get_git_diff.rs` |
+| `/review` | 结构化代码审查（P0–P3 发现 + 结论） | `codex-rs/prompts/src/review_request.rs`、`codex-rs/prompts/templates/review/rubric.md` |
+| `/recap` | 会话速览摘要（不动上下文） | `codex-rs/context-fragments/src/recap_prompt.rs`、`codex-rs/tui/src/app/recap.rs` |
 
 ---
 
@@ -47,7 +47,7 @@
 - 无变更时提示 "No changes detected"；非 git 仓库报错
 - 单条 git 命令输出上限 8 MB，查看器上限 2 MB（超出截断）
 
-**安全设计**：所有 git 调用带 `core.hooksPath=/dev/null`（不执行仓库 hooks），并加 `--no-textconv --no-ext-diff`（不执行仓库配置的外部过滤/diff 驱动程序）。
+**安全设计**：所有 git 调用带 `core.hooksPath=/dev/null`（不执行仓库 hooks），并加 `--no-textconv --no-ext-diff`（不运行仓库配置的外部 diff 驱动与 textconv；git 的 `filter.*` clean 过滤器不在禁用范围内）。
 
 **模式回退**：print 模式（`pi -p "/diff"`）直接输出到 stdout；RPC/JSON 模式写入临时 `.patch` 文件并通知路径。
 
@@ -108,7 +108,10 @@
 ├── init.ts       # /init
 ├── diff.ts       # /diff（含全屏查看器组件）
 ├── review.ts     # /review（目标解析 + rubric 构造）
-└── recap.ts      # /recap（对话提取 + 旁路模型调用 + 浮层展示）
+├── recap.ts      # /recap（对话提取 + 旁路模型调用 + 浮层展示）
+├── LICENSE       # 本目录适用的 Apache-2.0 协议全文
+├── NOTICE        # 来源署名
+└── README.md     # 本文档
 ```
 
 扩展由 pi 通过 jiti 加载，无需编译。若改动后想做严格类型检查，需让 `@earendil-works/*` 可解析（例如把 `~/.pi/agent/install/releases/<版本>/node_modules` 链接为同级 `node_modules`），然后：
@@ -118,3 +121,16 @@ tsc --strict --noEmit --allowImportingTsExtensions \
   --module nodenext --moduleResolution nodenext --target es2022 \
   --skipLibCheck ~/.pi/agent/extensions/codex-tools/*.ts
 ```
+
+## 来源与许可
+
+本目录改编自 [OpenAI Codex](https://github.com/openai/codex)（Copyright 2025 OpenAI，[Apache-2.0](https://github.com/openai/codex/blob/main/LICENSE)）：把其 Rust 实现与提示词改写为 TypeScript 并接入 pi 扩展 API，属于上游的衍生作品。**因此本目录整体以 [Apache-2.0](LICENSE) 授权，不适用仓库根目录的 MIT 协议**；署名信息见 [NOTICE](NOTICE)。
+
+相对上游的主要改动：
+
+- `/init`：提示词改用 Markdown 标题层级，删去"先检查 AGENTS.md 是否存在"一句（改由扩展在本地检查），并支持 `/init <附加指令>` 追加自定义要求。
+- `/diff`：用 TypeScript 重新实现 diff 流程（禁用 hooks、`--no-textconv --no-ext-diff`、untracked 文件按新增渲染）；全屏查看器与非 TUI 模式的回退（stdout / patch 文件）为自行实现。未移植上游的 fsmonitor 探测与 `filter.*` 驱动禁用。
+- `/review`：rubric 精简改写为 Markdown 报告格式（上游为 JSON schema）；目标解析、TUI 选择框与参数补全按 pi 扩展 API 实现。
+- `/recap`：提示词删改并放宽篇幅限制；未移植上游的自动调度，仅保留手动 `/recap`。
+
+使用或再分发本目录时，请遵守 Apache-2.0 第 4 条的要求（保留协议副本、署名与修改声明）。Codex 是 OpenAI 的产品名，本仓库与 OpenAI 无关联，也未获其背书。

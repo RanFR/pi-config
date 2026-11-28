@@ -1,8 +1,11 @@
 /**
- * `/diff` command, ported from codex's TUI `/diff` (get_git_diff.rs).
+ * `/diff` command: shows the working-tree diff (staged + unstaged + untracked).
  *
- * Shows the working-tree diff (staged + unstaged + untracked) in a scrollable
- * full-screen viewer; falls back to writing a patch file outside TUI mode.
+ * Opens a scrollable full-screen viewer in TUI mode; outside TUI mode it prints the
+ * diff to stdout (print mode) or writes a patch file and reports its path.
+ *
+ * Adapts material from OpenAI Codex (https://github.com/openai/codex), Apache-2.0.
+ * See LICENSE and NOTICE in this directory.
  *
  * @module
  */
@@ -158,11 +161,11 @@ async function writePatchFile(diff: string): Promise<string> {
  */
 export function registerDiffCommand(pi: ExtensionAPI): void {
   pi.registerCommand('diff', {
-    description: 'Show git diff incl. untracked files (from codex)',
+    description: 'Show git diff incl. untracked files',
     handler: async (_args, ctx) => {
-      if (ctx.hasUI) ctx.ui.setStatus('codex-diff', 'Computing diff...');
+      if (ctx.hasUI) ctx.ui.setStatus('diff', 'Computing diff...');
       const result = await getWorkingTreeDiff(pi.exec, ctx.cwd);
-      if (ctx.hasUI) ctx.ui.setStatus('codex-diff', undefined);
+      if (ctx.hasUI) ctx.ui.setStatus('diff', undefined);
 
       if (!result.ok) {
         if (ctx.hasUI) ctx.ui.notify(`/diff — ${result.error}`, 'error');

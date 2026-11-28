@@ -1,10 +1,12 @@
 /**
- * `/review` command, ported from codex (prompts/src/review_request.rs +
- * review/rubric.md).
+ * `/review` command: prioritized code review of uncommitted changes (default), a
+ * base branch, or a specific commit.
  *
- * Targets: uncommitted changes (default), a base branch, or a specific commit.
- * Sends a review prompt into the current session so the agent reviews the diff
- * with its tools and reports prioritized findings.
+ * Sends a review prompt into the current session so the agent inspects the diff with
+ * its own tools and reports P0-P3 findings plus an overall verdict.
+ *
+ * Adapts material from OpenAI Codex (https://github.com/openai/codex), Apache-2.0.
+ * See LICENSE and NOTICE in this directory.
  *
  * @module
  */
@@ -13,7 +15,7 @@ import type { ExtensionAPI, ExtensionCommandContext } from '@earendil-works/pi-c
 import type { AutocompleteItem } from '@earendil-works/pi-tui';
 import { commitTitle, defaultBranch, isGitRepo, localBranches, mergeBase } from './git.ts';
 
-/** Review rubric appended to every review prompt (adapted from codex). */
+/** Review guidelines and output format appended to every review prompt. */
 const RUBRIC = `## Review guidelines
 
 You are acting as a reviewer for a proposed code change made by another engineer.
@@ -170,7 +172,7 @@ async function buildPrompt(pi: ExtensionAPI, cwd: string, target: ReviewTarget):
  */
 export function registerReviewCommand(pi: ExtensionAPI): void {
   pi.registerCommand('review', {
-    description: 'Review current changes and find issues (from codex)',
+    description: 'Review current changes and find issues',
     getArgumentCompletions: (prefix: string): AutocompleteItem[] | null => {
       const items: AutocompleteItem[] = [
         { value: 'base', label: 'base <branch>' },

@@ -1,8 +1,12 @@
 /**
- * Shared git helpers for the codex-tools commands.
+ * Shared git helpers for the `/diff` and `/review` commands.
  *
- * Mirrors codex's `get_git_diff` behavior: tracked + untracked changes, with
- * hook execution and external diff/textconv drivers disabled.
+ * `getWorkingTreeDiff` builds the tracked diff (staged + unstaged) plus untracked
+ * files rendered as additions, with hook execution and external diff/textconv
+ * drivers disabled; the remaining helpers resolve branches and commits for `/review`.
+ *
+ * Adapts material from OpenAI Codex (https://github.com/openai/codex), Apache-2.0.
+ * See LICENSE and NOTICE in this directory.
  *
  * @module
  */

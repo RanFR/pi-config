@@ -8,6 +8,9 @@
  * State is stored in tool result details (not external files), which allows
  * proper branching - when you branch, the todo state is automatically
  * correct for that point in history.
+ *
+ * Adapted from pi's `examples/extensions/todo.ts` (MIT); copyright and license
+ * notice retained in THIRD_PARTY_LICENSES.md at the repository root.
  */
 
 import { StringEnum } from '@earendil-works/pi-ai';

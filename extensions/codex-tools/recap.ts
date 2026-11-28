@@ -1,8 +1,11 @@
 /**
- * `/recap` command, ported from codex (tui/src/app/recap.rs + recap_prompt.rs).
+ * `/recap` command: catch-up summary of the current conversation.
  *
- * One-off model call that summarizes the current conversation (summary +
- * suggested next action) without touching the session context.
+ * One-off model call that returns a summary plus a suggested next action, without
+ * touching the session context.
+ *
+ * Adapts material from OpenAI Codex (https://github.com/openai/codex), Apache-2.0.
+ * See LICENSE and NOTICE in this directory.
  *
  * @module
  */
@@ -12,7 +15,7 @@ import type { ExtensionAPI, ExtensionCommandContext } from '@earendil-works/pi-c
 import { DynamicBorder, getMarkdownTheme } from '@earendil-works/pi-coding-agent';
 import { Container, Markdown, matchesKey, Text } from '@earendil-works/pi-tui';
 
-/** codex caps the whole recap prompt around 8k tokens (~32 KB). */
+/** Caps the transcript so the whole recap prompt stays around 8k tokens (~32 KB). */
 const HISTORY_MAX_CHARS = 32_000;
 
 /** Parsed recap: a catch-up summary plus an optional suggested next action. */
@@ -205,7 +208,7 @@ async function showRecapUi(recap: RecapResult, ctx: ExtensionCommandContext): Pr
  */
 export function registerRecapCommand(pi: ExtensionAPI): void {
   pi.registerCommand('recap', {
-    description: 'Summarize the conversation so far (from codex)',
+    description: 'Summarize the conversation so far',
     handler: async (_args, ctx) => {
       const conversationText = buildConversationText(ctx.sessionManager.getBranch());
       if (conversationText.trim().length === 0) {
@@ -223,7 +226,7 @@ export function registerRecapCommand(pi: ExtensionAPI): void {
         return;
       }
 
-      if (ctx.hasUI) ctx.ui.setStatus('codex-recap', 'Generating recap...');
+      if (ctx.hasUI) ctx.ui.setStatus('recap', 'Generating recap...');
       let recap: RecapResult;
       try {
         const response = await ctx.modelRegistry.complete(
@@ -258,7 +261,7 @@ export function registerRecapCommand(pi: ExtensionAPI): void {
         }
         return;
       } finally {
-        ctx.ui.setStatus('codex-recap', undefined);
+        ctx.ui.setStatus('recap', undefined);
       }
 
       await showRecapUi(recap, ctx);

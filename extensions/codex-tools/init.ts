@@ -1,9 +1,12 @@
 /**
- * `/init` command, ported from codex (tui/assets/prompt_for_init_command.md).
+ * `/init` command: analyzes the repository and writes an AGENTS.md contributor guide.
  *
  * Replaces the previous ~/.pi/agent/prompts/init.md prompt template: the
  * AGENTS.md existence check runs in the extension instead of the prompt, and
  * extra instructions can be passed as arguments (`/init focus on testing`).
+ *
+ * Adapts material from OpenAI Codex (https://github.com/openai/codex), Apache-2.0.
+ * See LICENSE and NOTICE in this directory.
  *
  * @module
  */
@@ -14,7 +17,7 @@ import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 
 /**
  * Prompt sent into the session to generate the AGENTS.md contributor guide.
- * Adapted from codex's init prompt; the model writes the file itself.
+ * The model explores the repository and writes the file itself.
  */
 const INIT_PROMPT = `Generate a file named AGENTS.md that serves as a contributor guide for this repository.
 
@@ -72,7 +75,7 @@ Add other sections if relevant, such as Security & Configuration Tips, Architect
  */
 export function registerInitCommand(pi: ExtensionAPI): void {
   pi.registerCommand('init', {
-    description: 'Create an AGENTS.md file with instructions for pi (from codex)',
+    description: 'Create an AGENTS.md file with instructions for pi',
     handler: async (args, ctx) => {
       const agentsPath = join(ctx.cwd, 'AGENTS.md');
       try {
